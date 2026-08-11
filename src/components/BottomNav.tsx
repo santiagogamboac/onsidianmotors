@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { Car, ListChecks, Sparkles, Star, MessageCircle } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Car, BadgeEuro, Star, MessageCircle } from "lucide-react";
 
 const TABS = [
   { href: "#fleet", label: "Fleet", icon: Car },
-  { href: "#how", label: "How it works", icon: ListChecks },
-  { href: "#experience", label: "Experience", icon: Sparkles },
+  { href: "#pricing", label: "Pricing", icon: BadgeEuro },
   { href: "#reviews", label: "Reviews", icon: Star },
   { href: "#contact", label: "Contact", icon: MessageCircle },
 ];
 
 export default function BottomNav() {
   const [active, setActive] = useState<string | null>(null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const sections = TABS.map((t) =>
@@ -30,7 +31,7 @@ export default function BottomNav() {
 
     sections.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
 
   return (
     <nav
@@ -41,14 +42,9 @@ export default function BottomNav() {
       {TABS.map((t) => {
         const Icon = t.icon;
         const isActive = active === t.href;
-        return (
-          <a
-            key={t.href}
-            href={t.href}
-            aria-label={t.label}
-            aria-current={isActive ? "true" : undefined}
-            className="flex flex-1 flex-col items-center justify-center gap-1"
-          >
+        const className = "flex flex-1 flex-col items-center justify-center gap-1";
+        const content = (
+          <>
             <Icon
               size={22}
               strokeWidth={1.75}
@@ -59,7 +55,28 @@ export default function BottomNav() {
                 isActive ? "opacity-100" : "opacity-0"
               }`}
             />
+          </>
+        );
+        return pathname === "/" ? (
+          <a
+            key={t.href}
+            href={t.href}
+            aria-label={t.label}
+            aria-current={isActive ? "true" : undefined}
+            className={className}
+          >
+            {content}
           </a>
+        ) : (
+          <Link
+            key={t.href}
+            to={`/${t.href}`}
+            aria-label={t.label}
+            aria-current={isActive ? "true" : undefined}
+            className={className}
+          >
+            {content}
+          </Link>
         );
       })}
     </nav>
