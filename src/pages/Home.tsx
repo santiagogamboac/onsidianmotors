@@ -1,6 +1,7 @@
 import Hero from "../components/Hero";
 import BrandTicker from "../components/BrandTicker";
 import Fleet from "../components/Fleet";
+import Pricing from "../components/Pricing";
 import HowItWorks from "../components/HowItWorks";
 import Experience from "../components/Experience";
 import Reviews from "../components/Reviews";
@@ -12,6 +13,7 @@ export default function Home() {
       <Hero />
       <BrandTicker />
       <Fleet />
+      <Pricing />
       <HowItWorks />
       <Experience />
       <Reviews />
