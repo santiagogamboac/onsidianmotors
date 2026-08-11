@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, Phone, X } from "lucide-react";
+import { fleet } from "../data/fleet";
 
 const LINKS = [
   { href: "#fleet", label: "Fleet" },
+  { href: "#pricing", label: "Pricing" },
   { href: "#how", label: "How it works" },
   { href: "#experience", label: "Experience" },
   { href: "#reviews", label: "Reviews" },
@@ -13,6 +16,7 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const startingPrice = Math.min(...fleet.map((v) => v.pricePerDay));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -47,20 +51,20 @@ export default function Nav() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
           {/* Logo */}
-          <a href="#" className="font-display text-lg tracking-[0.08em]">
+          <Link to="/" className="font-display text-lg tracking-[0.08em]">
             OBSIDIAN <span className="text-accent">MOTORS</span>
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-8 lg:flex">
             {LINKS.map((l) => (
-              <a
+              <SectionLink
                 key={l.href}
                 href={l.href}
                 className="text-sm text-muted transition-colors hover:text-text"
               >
                 {l.label}
-              </a>
+              </SectionLink>
             ))}
           </nav>
 
@@ -73,12 +77,12 @@ export default function Nav() {
               <Phone size={15} strokeWidth={1.75} />
               +00 000 000 000
             </a>
-            <a
+            <SectionLink
               href="#contact"
               className="rounded-full border border-accent/60 px-5 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-bg"
             >
               Get in Touch
-            </a>
+            </SectionLink>
           </div>
 
           {/* Mobile hamburger */}
@@ -126,9 +130,20 @@ export default function Nav() {
           paddingTop: "calc(64px + env(safe-area-inset-top))",
         }}
       >
-        <nav className="flex flex-col px-6 py-8 gap-1">
+        {/* Pricing summary */}
+        <div className="mx-6 mt-2 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3">
+          <p className="font-display text-lg text-accent">
+            From €{startingPrice}
+            <span className="text-xs text-muted">/day</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted">
+            Insurance & 24/7 support included on every rental.
+          </p>
+        </div>
+
+        <nav className="flex flex-col px-6 py-6 gap-1">
           {LINKS.map((l, i) => (
-            <a
+            <SectionLink
               key={l.href}
               href={l.href}
               onClick={close}
@@ -141,7 +156,7 @@ export default function Nav() {
               }}
             >
               {l.label}
-            </a>
+            </SectionLink>
           ))}
         </nav>
 
@@ -154,15 +169,45 @@ export default function Nav() {
             <Phone size={15} strokeWidth={1.75} />
             +00 000 000 000
           </a>
-          <a
+          <SectionLink
             href="#contact"
             onClick={close}
             className="rounded-full bg-accent px-5 py-3 text-center text-sm font-medium text-bg"
           >
             Get in Touch
-          </a>
+          </SectionLink>
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Renders a plain anchor on Home (unchanged smooth-scroll behavior) or a
+ * React Router Link to "/#section" on any other route, so section links keep
+ * working from the vehicle detail page.
+ */
+function SectionLink({
+  href,
+  className,
+  onClick,
+  style,
+  children,
+}: {
+  href: string;
+  className?: string;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const { pathname } = useLocation();
+  return pathname === "/" ? (
+    <a href={href} className={className} onClick={onClick} style={style}>
+      {children}
+    </a>
+  ) : (
+    <Link to={`/${href}`} className={className} onClick={onClick} style={style}>
+      {children}
+    </Link>
   );
 }
