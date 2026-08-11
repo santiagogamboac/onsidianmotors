@@ -11,7 +11,7 @@ export default function VehicleDetail() {
   if (!vehicle) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-32 text-center lg:px-10">
-        <p className="font-display text-2xl">Vehicle not found</p>
+        <h1 className="font-display text-2xl">Vehicle not found</h1>
         <p className="mt-2 text-sm text-muted">
           It may have left the fleet, or the link is out of date.
         </p>
@@ -64,11 +64,12 @@ export default function VehicleDetail() {
               {vehicle.description}
             </p>
 
-            <div className="spec mt-8 grid grid-cols-2 gap-4 border-t border-line pt-6 sm:grid-cols-4">
+            <div className="spec mt-8 grid grid-cols-2 gap-4 border-t border-line pt-6 sm:grid-cols-3 lg:grid-cols-5">
               <Spec label="Engine" value={vehicle.engine} />
               <Spec label="0–100" value={vehicle.zeroToHundred} />
               <Spec label="Doors" value={String(vehicle.doors)} />
               <Spec label="Seats" value={String(vehicle.seats)} />
+              <Spec label="Type" value={vehicle.type} />
             </div>
 
             <div className="mt-8 flex gap-3">
@@ -144,7 +145,7 @@ function Gallery({ images, name }: { images: string[]; name: string }) {
               key={img}
               onClick={() => setActive(i)}
               aria-label={`Show image ${i + 1} of ${images.length}`}
-              aria-current={i === active}
+              aria-pressed={i === active}
               className={`aspect-[4/3] overflow-hidden rounded-lg border transition-colors ${
                 i === active ? "border-accent" : "border-line hover:border-line-strong"
               }`}

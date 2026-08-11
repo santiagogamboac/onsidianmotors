@@ -130,8 +130,12 @@ export default function Nav() {
           paddingTop: "calc(64px + env(safe-area-inset-top))",
         }}
       >
-        {/* Pricing summary */}
-        <div className="mx-6 mt-2 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3">
+        {/* Pricing summary — links to the Pricing section */}
+        <SectionLink
+          href="#pricing"
+          onClick={close}
+          className="mx-6 mt-2 block rounded-xl border border-accent/30 bg-accent-soft px-4 py-3 transition-colors hover:border-accent/60"
+        >
           <p className="font-display text-lg text-accent">
             From €{startingPrice}
             <span className="text-xs text-muted">/day</span>
@@ -139,7 +143,7 @@ export default function Nav() {
           <p className="mt-0.5 text-xs text-muted">
             Insurance & 24/7 support included on every rental.
           </p>
-        </div>
+        </SectionLink>
 
         <nav className="flex flex-col px-6 py-6 gap-1">
           {LINKS.map((l, i) => (
@@ -152,7 +156,13 @@ export default function Nav() {
                 transitionDelay: open ? `${i * 40}ms` : "0ms",
                 opacity: open ? 1 : 0,
                 transform: open ? "translateX(0)" : "translateX(-12px)",
-                transition: "opacity 0.3s ease, transform 0.3s ease, background-color 0.15s",
+                // Longhands rather than the `transition` shorthand: mixing the
+                // shorthand with a separately-set transitionDelay triggers a
+                // React dev-mode warning (the shorthand can clobber the
+                // longhand depending on application order).
+                transitionProperty: "opacity, transform, background-color",
+                transitionDuration: "0.3s, 0.3s, 0.15s",
+                transitionTimingFunction: "ease, ease, ease",
               }}
             >
               {l.label}

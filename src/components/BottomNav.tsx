@@ -14,6 +14,11 @@ export default function BottomNav() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    // Reset on every navigation: BottomNav lives in the shared Layout and never
+    // unmounts, so without this the tab that was active on Home stays visually
+    // active (and aria-current) on routes with no matching sections.
+    setActive(null);
+
     const sections = TABS.map((t) =>
       document.getElementById(t.href.slice(1))
     ).filter((el): el is HTMLElement => el !== null);

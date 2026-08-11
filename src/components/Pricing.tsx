@@ -2,7 +2,10 @@ import { Check } from "lucide-react";
 import { fleet, type VehicleType } from "../data/fleet";
 import { useInView } from "../hooks/useInView";
 
-const TYPES: VehicleType[] = ["Sedan", "SUV"];
+// Derived from the fleet rather than hand-maintained, so TYPES can never
+// contain a type with zero vehicles (which would make rangeFor return
+// Infinity/-Infinity) or miss a type newly added to the fleet.
+const TYPES = [...new Set(fleet.map((v) => v.type))];
 
 const INCLUDED = [
   "Full insurance coverage",
