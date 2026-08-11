@@ -27,9 +27,14 @@ export default function VehicleDetail() {
 
   const sameType = fleet.filter((v) => v.id !== vehicle.id && v.type === vehicle.type);
   const related =
-    sameType.length > 0
+    sameType.length >= 3
       ? sameType.slice(0, 3)
-      : fleet.filter((v) => v.id !== vehicle.id && v.brand === vehicle.brand).slice(0, 3);
+      : [
+          ...sameType,
+          ...fleet.filter(
+            (v) => v.id !== vehicle.id && v.brand === vehicle.brand && !sameType.includes(v)
+          ),
+        ].slice(0, 3);
 
   return (
     <div className="pt-24 lg:pt-32">
@@ -43,7 +48,7 @@ export default function VehicleDetail() {
         </Link>
 
         <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
-          <Gallery images={vehicle.images} name={vehicle.name} />
+          <Gallery key={vehicle.id} images={vehicle.images} name={vehicle.name} />
 
           <div>
             <p className="eyebrow mb-2">{vehicle.brand}</p>
