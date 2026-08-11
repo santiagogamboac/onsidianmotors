@@ -1,0 +1,112 @@
+@import "tailwindcss";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@theme {
+  --color-bg: #0a0a0b;
+  --color-surface: #131315;
+  --color-surface-2: #1a1a1d;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+  --color-text: #edeceb;
+  --color-muted: #9a9a9f;
+  --color-accent: #c6a15b;
+  --color-accent-soft: rgba(198, 161, 91, 0.14);
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.spec {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #0a0a0b;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Brand ticker ───────────────────────────────────────────────────────── */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.ticker-track {
+  animation: ticker 18s linear infinite;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ─── Fade-up utility (used by InView hook pattern) ─────────────────────── */
+.fade-up-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.fade-up-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
