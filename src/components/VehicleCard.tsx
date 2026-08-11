@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { Vehicle } from "../data/fleet";
 import { useInView } from "../hooks/useInView";
 import VehicleCardSkeleton from "./VehicleCardSkeleton";
@@ -45,7 +46,7 @@ export default function VehicleCard({ vehicle: v, index = 0 }: VehicleCardProps)
 
         {!imgError && (
           <img
-            src={v.image}
+            src={v.images[0]}
             alt={v.name}
             loading="lazy"
             decoding="async"
@@ -86,12 +87,12 @@ export default function VehicleCard({ vehicle: v, index = 0 }: VehicleCardProps)
         </div>
 
         <div className="mt-5 flex gap-3">
-          <a
-            href="#contact"
+          <Link
+            to={`/fleet/${v.id}`}
             className="flex-1 rounded-full border border-line-strong py-2 text-center text-xs font-medium transition-colors hover:border-accent hover:text-accent"
           >
             View Details
-          </a>
+          </Link>
           <a
             href="https://wa.me/00000000000"
             target="_blank"
