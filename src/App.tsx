@@ -1,25 +1,15 @@
-import Nav from "./components/Nav";
-import Hero from "./components/Hero";
-import BrandTicker from "./components/BrandTicker";
-import Fleet from "./components/Fleet";
-import HowItWorks from "./components/HowItWorks";
-import Experience from "./components/Experience";
-import Reviews from "./components/Reviews";
-import Contact from "./components/Contact";
-import Footer from "./components/Footer";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Home from "./pages/Home";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <Nav />
-      <Hero />
-      <BrandTicker />
-      <Fleet />
-      <HowItWorks />
-      <Experience />
-      <Reviews />
-      <Contact />
-      <Footer />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
