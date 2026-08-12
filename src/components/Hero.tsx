@@ -30,7 +30,7 @@ export default function Hero() {
           className="h-full w-full object-cover object-center"
         />
         {/* Dark overlay gradient */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,11,0.55)_0%,rgba(10,10,11,0.3)_40%,rgba(10,10,11,0.85)_75%,var(--color-bg)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,11,0.55)_0%,rgba(10,10,11,0.3)_40%,rgba(10,10,11,0.85)_75%,#0a0a0b_100%)]" />
         {/* Subtle gold radial from top */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(198,161,91,0.12),transparent_60%)]" />
       </div>
