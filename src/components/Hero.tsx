@@ -30,7 +30,7 @@ export default function Hero() {
           className="h-full w-full object-cover object-center"
         />
         {/* Dark overlay gradient */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,11,0.55)_0%,rgba(10,10,11,0.3)_40%,rgba(10,10,11,0.85)_75%,#0a0a0b_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,11,0.55)_0%,rgba(10,10,11,0.3)_40%,rgba(10,10,11,0.85)_75%,var(--color-bg)_100%)]" />
         {/* Subtle gold radial from top */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(198,161,91,0.12),transparent_60%)]" />
       </div>
@@ -43,6 +43,7 @@ export default function Hero() {
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(16px)",
             transitionDelay: "100ms",
+            color: "#c6a15b",
           }}
         >
           Premium fleet · Delivered to your door
@@ -50,7 +51,7 @@ export default function Hero() {
 
         {/* Headline */}
         <h1
-          className="font-display max-w-3xl text-5xl font-medium leading-[1.05] tracking-tight text-text sm:text-6xl lg:text-7xl transition-all duration-700 ease-out"
+          className="font-display max-w-3xl text-5xl font-medium leading-[1.05] tracking-tight text-[#edeceb] sm:text-6xl lg:text-7xl transition-all duration-700 ease-out"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(24px)",
@@ -59,12 +60,12 @@ export default function Hero() {
         >
           Drive what moves you.
           <br />
-          <span className="text-muted">No strings attached.</span>
+          <span className="text-[#9a9a9f]">No strings attached.</span>
         </h1>
 
         {/* Body */}
         <p
-          className="mt-6 max-w-xl text-base text-muted lg:text-lg transition-all duration-700 ease-out"
+          className="mt-6 max-w-xl text-base text-[#9a9a9f] lg:text-lg transition-all duration-700 ease-out"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
@@ -93,7 +94,7 @@ export default function Hero() {
           </a>
           <a
             href="#contact"
-            className="rounded-full border border-line-strong px-7 py-3 text-sm font-medium text-text backdrop-blur-sm transition-colors hover:border-accent/60 hover:text-accent"
+            className="rounded-full border border-[rgba(255,255,255,0.14)] px-7 py-3 text-sm font-medium text-[#edeceb] backdrop-blur-sm transition-colors hover:border-[#c6a15b]/60 hover:text-[#c6a15b]"
           >
             Get in Touch
           </a>
@@ -101,7 +102,7 @@ export default function Hero() {
 
         {/* Brand strip */}
         <div
-          className="mt-16 flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-line pt-8 transition-all duration-700 ease-out"
+          className="mt-16 flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-[rgba(255,255,255,0.08)] pt-8 transition-all duration-700 ease-out"
           style={{
             opacity: visible ? 1 : 0,
             transitionDelay: "580ms",
@@ -110,7 +111,7 @@ export default function Hero() {
           {BRANDS.map((b, i) => (
             <span
               key={b}
-              className="font-display text-sm tracking-wide text-muted/70 transition-all duration-500 ease-out"
+              className="font-display text-sm tracking-wide text-[#9a9a9f]/70 transition-all duration-500 ease-out"
               style={{
                 opacity: visible ? 1 : 0,
                 transform: visible ? "translateY(0)" : "translateY(8px)",
