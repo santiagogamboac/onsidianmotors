@@ -77,26 +77,53 @@ synchronously, reads `localStorage`/`matchMedia`, and sets `data-theme` on
 `<html>` before first paint. This script is the only place the initial theme is decided;
 React reads the already-set attribute on mount rather than recomputing it.
 
-## Hero / Floating Nav: Fixed Dark Treatment
+## Hero: Fixed Dark Treatment
 
 `Hero.tsx` renders a full-bleed night-time car photo with a dark gradient overlay, using
 `text-text`/`text-muted` for its headline and body copy. If those tokens turned graphite
-in light mode, the text would lose almost all contrast against the dark photo. The same
-applies to `Nav.tsx`'s un-scrolled floating state, which sits transparently over the
-Hero with a `from-black/60` scrim and theme-token text.
+in light mode, the text would lose almost all contrast against the dark photo — and
+unlike the Nav (below), the Hero's headline/body sit directly on the photo with no
+blur or backdrop of their own to lean on.
 
-**Decision:** the Hero section, and the Nav's floating (pre-scroll) state, keep a fixed
-dark/light-text treatment regardless of the active site theme — they sit on a
-photograph, not the page background, so they're exempt from theming. Once the user
-scrolls and the Nav becomes solid (`bg-bg/90`), it switches to theme-aware colors like
-the rest of the page. This is the standard pattern for sites with photographic heroes.
+**Decision:** the Hero's headline/body text keeps a fixed light color regardless of the
+active site theme — it sits on a photograph, not the page background, so it's exempt
+from theming. Its overlay gradient, which today hardcodes its final stop as `#0a0a0b`,
+changes to `var(--color-bg)` so the seam between the Hero and the next section matches
+whichever theme is active instead of leaving a dark band under a light page.
 
-Concretely: `Hero.tsx`'s headline/body text colors and the Nav's floating-state text
-color become fixed light values (not the `--color-text`/`--color-muted` tokens) instead
-of theme-aware ones. The Hero's overlay gradient, which today hardcodes its final stop
-as `#0a0a0b`, changes to `var(--color-bg)` so the seam between the Hero and the next
-section matches whichever theme is active instead of leaving a dark band under a light
-page.
+## Floating Nav: Theme-Aware, Not Exempt
+
+Unlike the Hero, the Nav's un-scrolled floating state (which sits transparently over the
+Hero with a `bg-linear-to-b from-black/60 to-transparent` scrim, `lg:14` header row) is
+**not** exempt — it must read correctly in both themes, since it's a persistent piece of
+site chrome the user may toggle while looking at it. Text and logo stay on the existing
+`text-text`/`text-muted` tokens (graphite in light mode, off-white in dark mode) exactly
+as before this design — no fixed-color special case needed here.
+
+What changes is the scrim itself. `from-black/60` is a fixed dark tint, which works for
+dark-mode text (light-on-dark) but would leave light-mode graphite text sitting on the
+same dark tint with too little contrast. It's replaced with a new theme-aware token,
+`--color-nav-scrim`, baked-in alpha like the existing `--color-line` tokens:
+
+| Token | Dark | Light |
+|---|---|---|
+| `--color-nav-scrim` | `rgba(0,0,0,0.6)` | `rgba(244,245,246,0.78)` |
+
+used as `bg-linear-to-b from-[var(--color-nav-scrim)] to-transparent`. In dark mode this
+is pixel-identical to the current hardcoded value — no visual regression to the
+already-shipped look. In light mode it lightens the header row instead of darkening it,
+so graphite text stays legible over the photo. `backdrop-blur-sm` is added to the
+floating state in both themes (currently absent; only the scrolled state has blur) as a
+legibility safety net — it softens whatever part of the photo sits behind the header
+regardless of local brightness, rather than relying on gradient alpha alone.
+
+The scrolled/solid Nav state (`bg-bg/90 backdrop-blur-md border-b border-line`) was
+already theme-aware via `--color-bg` and needs no change.
+
+The exact light-mode scrim alpha (`0.78`) is a starting point for manual visual QA
+during implementation — the Hero's own dark overlay still sits underneath at that
+scroll position, so the combined result should be checked over the actual hero photo,
+not just assumed correct from the numbers.
 
 ## Theme State & Switch UI
 
@@ -134,8 +161,9 @@ bordered-pill visual language (filters, buttons).
 - `src/index.css` — add `[data-theme="light"]` token overrides.
 - `index.html` — add the inline anti-flash theme-detection script in `<head>`.
 - `src/hooks/useTheme.ts` — new hook (state, persistence, matchMedia subscription).
-- `src/components/Nav.tsx` — desktop icon toggle; mobile drawer switch row; Hero-adjacent
-  floating-state text becomes fixed (not theme-token) color.
+- `src/components/Nav.tsx` — desktop icon toggle; mobile drawer switch row; floating-state
+  scrim switches from hardcoded `from-black/60` to the new `--color-nav-scrim` token,
+  plus `backdrop-blur-sm`. Text/logo colors are unchanged (already theme-token driven).
 - `src/components/Hero.tsx` — headline/body text becomes fixed light color; overlay
   gradient's final stop changes from `#0a0a0b` to `var(--color-bg)`.
 
@@ -152,8 +180,11 @@ semantic color tokens.
 - Confirm a manual choice persists across a full page reload and across navigating to
   `/fleet/:id` and back.
 - Confirm no dark-to-light (or light-to-dark) flash on load once a theme is stored.
-- Confirm Hero/floating-nav text stays legible over the photo in both themes, and the
-  Hero-to-next-section seam has no mismatched dark band in light mode.
+- Confirm the Hero's headline/body text stays legible over the photo in both themes, and
+  the Hero-to-next-section seam has no mismatched dark band in light mode.
+- Confirm the floating Nav (pre-scroll) is legible in both themes at several scroll
+  positions over the Hero photo (its brightness varies left-to-right/top-to-bottom), and
+  that dark mode's floating Nav is visually unchanged from before this feature.
 - No automated test suite exists in this project; verified manually via the dev server.
 
 ## Alternatives Considered
@@ -164,7 +195,7 @@ semantic color tokens.
 - **React Context for theme state**: rejected as unnecessary — only `Nav.tsx` renders
   theme controls; all other theming is automatic via CSS variables, so a single hook
   called once is sufficient (YAGNI).
-- **Theme-aware Hero/floating-nav**: considered making the Hero fully theme-aware too,
-  but rejected — the Hero is a fixed photographic treatment, and theme-aware text over a
-  dark photo would be illegible in light mode without redesigning the photo overlay
-  itself, which is out of scope.
+- **Fixed dark treatment for the floating Nav too** (mirroring the Hero): rejected per
+  user feedback — the Nav is persistent site chrome the user interacts with directly
+  (including the theme switch itself), so it must read correctly in light mode even
+  before scrolling, unlike the Hero's headline/body which is pure photographic content.
