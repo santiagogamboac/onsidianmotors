@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, Phone, X } from "lucide-react";
+import { Menu, Moon, Phone, Sun, X } from "lucide-react";
 import { fleet } from "../data/fleet";
+import { useTheme } from "../hooks/useTheme";
 
 const LINKS = [
   { href: "#fleet", label: "Fleet" },
@@ -17,6 +18,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const startingPrice = Math.min(...fleet.map((v) => v.pricePerDay));
+  const { theme, toggle } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -77,6 +79,18 @@ export default function Nav() {
               <Phone size={15} strokeWidth={1.75} />
               +00 000 000 000
             </a>
+            <button
+              type="button"
+              onClick={toggle}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:text-text"
+            >
+              {theme === "dark" ? (
+                <Moon size={18} strokeWidth={1.75} />
+              ) : (
+                <Sun size={18} strokeWidth={1.75} />
+              )}
+            </button>
             <SectionLink
               href="#contact"
               className="rounded-full border border-accent/60 px-5 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-bg"
@@ -171,6 +185,29 @@ export default function Nav() {
         </nav>
 
         <div className="px-6 pb-8 pt-2 border-t border-line flex flex-col gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={theme === "light"}
+            onClick={toggle}
+            className="flex items-center justify-between py-1"
+          >
+            <span className="text-sm text-muted">
+              {theme === "dark" ? "Modo oscuro" : "Modo claro"}
+            </span>
+            <span
+              className={`relative inline-flex h-6 w-11 items-center rounded-full border border-line-strong transition-colors ${
+                theme === "light" ? "bg-accent" : "bg-surface-2"
+              }`}
+            >
+              <span
+                className="inline-block h-5 w-5 rounded-full bg-surface shadow transition-transform"
+                style={{
+                  transform: theme === "light" ? "translateX(22px)" : "translateX(2px)",
+                }}
+              />
+            </span>
+          </button>
           <a
             href="tel:+000000000"
             className="flex items-center gap-2 text-sm text-muted hover:text-text"
