@@ -56,22 +56,22 @@ export default function Experience() {
           </h2>
         </div>
 
-        {/* 2×2 feature grid */}
-        <div
-          ref={gridRef}
-          className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2"
-        >
+        {/* 2×2 feature grid — same bordered bg-surface card language as
+            VehicleCard / HowItWorks, with individual gaps instead of a
+            seamless hairline grid so each card can lift independently. */}
+        <div ref={gridRef} className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className="bg-surface p-8 transition-all duration-700 ease-out"
-              style={{
-                opacity: gridVisible ? 1 : 0,
-                transform: gridVisible ? "translateY(0)" : "translateY(24px)",
-                transitionDelay: `${i * 100}ms`,
-              }}
+              // See HowItWorks MobileCard for why the reveal transform is a
+              // class, not inline style: inline style would always beat the
+              // hover:-translate-y-1 utility for the same property.
+              className={`group overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-500 ease-out hover:-translate-y-1 hover:border-accent/50 hover:shadow-[0_8px_40px_rgba(198,161,91,0.08)] ${
+                gridVisible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+              }`}
+              style={{ transitionDelay: `${i * 100}ms` }}
             >
-              <div className="aspect-16/10 overflow-hidden rounded-xl bg-surface-2">
+              <div className="aspect-16/10 overflow-hidden bg-surface-2">
                 <img
                   src={f.image}
                   alt={f.title}
@@ -79,14 +79,16 @@ export default function Experience() {
                   decoding="async"
                   width={800}
                   height={500}
-                  className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}
                 />
               </div>
-              <h3 className="font-display mt-6 text-xl">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{f.copy}</p>
+              <div className="p-8">
+                <h3 className="font-display text-xl">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{f.copy}</p>
+              </div>
             </div>
           ))}
         </div>
