@@ -42,19 +42,32 @@ export default function Nav() {
 
   const close = () => setOpen(false);
 
+  // While floating over the Hero photo (not scrolled, drawer closed) the nav
+  // sits on an image that's pinned to a fixed dark treatment regardless of
+  // theme — so its own colors must stay fixed too, or light-theme text/scrim
+  // goes dark-on-dark. Once scrolled past the Hero it gets a solid themed
+  // background and switches to theme-aware colors.
+  const floating = !scrolled && !open;
+
   return (
     <>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           scrolled || open
             ? "bg-bg/90 backdrop-blur-md border-b border-line"
-            : "bg-linear-to-b from-nav-scrim to-transparent backdrop-blur-sm"
+            : "bg-linear-to-b from-black/55 via-black/20 to-transparent backdrop-blur-md border-b border-white/5"
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
           {/* Logo */}
-          <Link to="/" className="font-display text-lg tracking-[0.08em]">
-            OBSIDIAN <span className="text-accent">MOTORS</span>
+          <Link
+            to="/"
+            className={`font-display text-lg tracking-[0.08em] transition-colors ${
+              floating ? "text-[#edeceb]" : "text-text"
+            }`}
+          >
+            OBSIDIAN{" "}
+            <span className={floating ? "text-[#c6a15b]" : "text-accent"}>MOTORS</span>
           </Link>
 
           {/* Desktop nav */}
@@ -63,7 +76,11 @@ export default function Nav() {
               <SectionLink
                 key={l.href}
                 href={l.href}
-                className="text-sm text-muted transition-colors hover:text-text"
+                className={`text-sm transition-colors ${
+                  floating
+                    ? "text-[#c9c9cd] hover:text-white"
+                    : "text-muted hover:text-text"
+                }`}
               >
                 {l.label}
               </SectionLink>
@@ -74,7 +91,9 @@ export default function Nav() {
           <div className="hidden items-center gap-3 lg:flex">
             <a
               href="tel:+000000000"
-              className="flex items-center gap-2 text-sm text-muted hover:text-text"
+              className={`flex items-center gap-2 text-sm transition-colors ${
+                floating ? "text-[#c9c9cd] hover:text-white" : "text-muted hover:text-text"
+              }`}
             >
               <Phone size={15} strokeWidth={1.75} />
               +00 000 000 000
@@ -83,7 +102,9 @@ export default function Nav() {
               type="button"
               onClick={toggle}
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:text-text"
+              className={`flex h-9 w-9 items-center justify-center transition-colors ${
+                floating ? "text-[#c9c9cd] hover:text-white" : "text-muted hover:text-text"
+              }`}
             >
               {theme === "dark" ? (
                 <Moon size={18} strokeWidth={1.75} />
@@ -93,7 +114,11 @@ export default function Nav() {
             </button>
             <SectionLink
               href="#contact"
-              className="rounded-full border border-accent/60 px-5 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-bg"
+              className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
+                floating
+                  ? "border-[#c6a15b]/60 text-[#c6a15b] hover:bg-[#c6a15b] hover:text-[#0a0a0b]"
+                  : "border-accent/60 text-accent hover:bg-accent hover:text-bg"
+              }`}
             >
               Get in Touch
             </SectionLink>
@@ -104,7 +129,9 @@ export default function Nav() {
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="mobile-drawer"
-            className="lg:hidden flex h-9 w-9 items-center justify-center text-text"
+            className={`lg:hidden flex h-9 w-9 items-center justify-center transition-colors ${
+              floating ? "text-[#edeceb]" : "text-text"
+            }`}
             onClick={() => setOpen((v) => !v)}
           >
             <span

@@ -16,7 +16,6 @@
   --color-muted: #9a9a9f;
   --color-accent: #c6a15b;
   --color-accent-soft: rgba(198, 161, 91, 0.14);
-  --color-nav-scrim: rgba(0, 0, 0, 0.6);
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
 }
@@ -31,7 +30,6 @@
   --color-muted: #6b6b70;
   --color-accent: #7c5f29;
   --color-accent-soft: rgba(124, 95, 41, 0.1);
-  --color-nav-scrim: rgba(244, 245, 246, 0.78);
 }
 
 html {
