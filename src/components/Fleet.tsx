@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { fleet, brandCounts, type Brand, type VehicleType } from "../data/fleet";
 import { useInView } from "../hooks/useInView";
@@ -159,7 +159,7 @@ export default function Fleet() {
                 panelClassName="w-full left-0"
               >
                 {() => (
-                  <div className="max-h-72 overflow-y-auto py-2">
+                  <div className="py-2">
                     <BrandRow
                       label="All brands"
                       checked={brands.size === 0}
@@ -274,6 +274,7 @@ function Dropdown({
   children: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState({ openUpward: false, maxHeight: 400 });
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -289,6 +290,30 @@ function Dropdown({
     return () => {
       document.removeEventListener("mousedown", onClick);
       document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // Keep the panel inside the viewport: flip it above the trigger when there
+  // isn't room below, and always cap its height so every option stays
+  // reachable by scrolling the panel instead of the page.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const updatePlacement = () => {
+      if (!ref.current) return;
+      const margin = 16;
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - margin;
+      const spaceAbove = rect.top - margin;
+      const openUpward = spaceBelow < 200 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(160, Math.min(400, openUpward ? spaceAbove : spaceBelow));
+      setPlacement({ openUpward, maxHeight });
+    };
+    updatePlacement();
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+    return () => {
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
     };
   }, [open]);
 
@@ -312,11 +337,17 @@ function Dropdown({
       <div
         role="listbox"
         aria-hidden={!open}
-        className={`absolute z-20 mt-2 origin-top rounded-2xl border border-line bg-surface shadow-xl transition-all duration-150 ease-out ${panelClassName}`}
+        inert={!open}
+        className={`absolute z-20 overflow-y-auto rounded-2xl border border-line bg-surface shadow-xl transition-all duration-150 ease-out ${
+          placement.openUpward ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top"
+        } ${panelClassName}`}
         style={{
           opacity: open ? 1 : 0,
-          transform: open ? "scale(1) translateY(0)" : "scale(0.97) translateY(-6px)",
+          transform: open
+            ? "scale(1) translateY(0)"
+            : `scale(0.97) translateY(${placement.openUpward ? "6px" : "-6px"})`,
           pointerEvents: open ? "auto" : "none",
+          maxHeight: placement.maxHeight,
         }}
       >
         {children(() => setOpen(false))}
