@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Search, X } from "lucide-react";
 import { fleet, brandCounts, type Brand, type VehicleType } from "../data/fleet";
 import { useInView } from "../hooks/useInView";
 import VehicleCard from "./VehicleCard";
@@ -8,30 +8,44 @@ type SortKey = "featured" | "price-asc" | "price-desc";
 
 const TYPES: VehicleType[] = ["Sedan", "SUV"];
 const BRANDS: Brand[] = ["BMW", "Mercedes-Benz", "Audi", "Porsche", "Range Rover"];
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "featured", label: "Featured" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
+];
 
 export default function Fleet() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<VehicleType | "All">("All");
-  const [brand, setBrand] = useState<Brand | "All">("All");
+  const [brands, setBrands] = useState<Set<Brand>>(() => new Set());
   const [sort, setSort] = useState<SortKey>("featured");
 
   const { ref: headingRef, inView: headingVisible } = useInView({ threshold: 0.2 });
+
+  const toggleBrand = (b: Brand) => {
+    setBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(b)) next.delete(b);
+      else next.add(b);
+      return next;
+    });
+  };
 
   const results = useMemo(() => {
     let list = fleet.filter((v) => {
       const matchesQuery = v.name.toLowerCase().includes(query.toLowerCase());
       const matchesType = type === "All" || v.type === type;
-      const matchesBrand = brand === "All" || v.brand === brand;
+      const matchesBrand = brands.size === 0 || brands.has(v.brand);
       return matchesQuery && matchesType && matchesBrand;
     });
     if (sort === "price-asc") list = [...list].sort((a, b) => a.pricePerDay - b.pricePerDay);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.pricePerDay - a.pricePerDay);
     return list;
-  }, [query, type, brand, sort]);
+  }, [query, type, brands, sort]);
 
   return (
     <section id="fleet" className="bg-bg py-24 lg:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-10">
+      <div className="mx-auto max-w-7xl px-6 lg:max-w-none lg:px-10 2xl:px-16">
         {/* Header */}
         <div
           ref={headingRef}
@@ -48,15 +62,40 @@ export default function Fleet() {
               <span className="text-muted">· of {fleet.length} in the fleet</span>
             </h2>
           </div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="w-fit rounded-full border border-line bg-surface px-4 py-2 text-sm text-text outline-none focus:border-accent"
+          <Dropdown
+            label={SORT_OPTIONS.find((o) => o.value === sort)?.label}
+            panelClassName="w-56 left-0 sm:left-auto sm:right-0"
           >
-            <option value="featured">Featured</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-          </select>
+            {(close) => (
+              <div className="py-2">
+                {SORT_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => {
+                      setSort(o.value);
+                      close();
+                    }}
+                    className={`flex w-full items-center justify-between gap-4 px-4 py-2.5 text-left text-sm transition-colors ${
+                      sort === o.value
+                        ? "text-accent"
+                        : "text-muted hover:bg-bg hover:text-text"
+                    }`}
+                  >
+                    {o.label}
+                    <Check
+                      size={14}
+                      className="shrink-0 transition-all duration-150"
+                      style={{
+                        opacity: sort === o.value ? 1 : 0,
+                        transform: sort === o.value ? "scale(1)" : "scale(0.6)",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </Dropdown>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[260px_1fr]">
@@ -75,50 +114,75 @@ export default function Fleet() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search"
-                className="w-full rounded-full border border-line bg-surface py-2.5 pl-9 pr-4 text-sm outline-none focus:border-accent"
+                className="w-full rounded-full border border-line bg-surface py-2.5 pl-9 pr-9 text-sm outline-none transition-all duration-200 focus:border-accent focus:ring-4 focus:ring-accent-soft"
               />
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                tabIndex={query ? 0 : -1}
+                className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-all duration-150 hover:text-text"
+                style={{
+                  opacity: query ? 1 : 0,
+                  transform: query ? "translateY(-50%) scale(1)" : "translateY(-50%) scale(0.7)",
+                  pointerEvents: query ? "auto" : "none",
+                }}
+              >
+                <X size={13} />
+              </button>
             </div>
 
             <div className="mb-8">
               <p className="mb-3 text-xs tracking-widest text-muted">TYPE</p>
-              <div className="relative">
-                <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                  <FilterPill active={type === "All"} onClick={() => setType("All")}>
-                    All
+              <div className="flex flex-wrap gap-2 lg:flex-col">
+                <FilterPill active={type === "All"} onClick={() => setType("All")}>
+                  All
+                </FilterPill>
+                {TYPES.map((t) => (
+                  <FilterPill key={t} active={type === t} onClick={() => setType(t)}>
+                    {t}
                   </FilterPill>
-                  {TYPES.map((t) => (
-                    <FilterPill key={t} active={type === t} onClick={() => setType(t)}>
-                      {t}
-                    </FilterPill>
-                  ))}
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-bg to-transparent lg:hidden" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-bg to-transparent lg:hidden" />
+                ))}
               </div>
             </div>
 
             <div>
               <p className="mb-3 text-xs tracking-widest text-muted">BRAND</p>
-              <div className="relative">
-                <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                  <FilterPill active={brand === "All"} onClick={() => setBrand("All")}>
-                    All
-                  </FilterPill>
-                  {BRANDS.map((b) => (
-                    <FilterPill key={b} active={brand === b} onClick={() => setBrand(b)}>
-                      {b}
-                      <span className="text-muted">{brandCounts[b] ?? 0}</span>
-                    </FilterPill>
-                  ))}
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-bg to-transparent lg:hidden" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-bg to-transparent lg:hidden" />
-              </div>
+              <Dropdown
+                label={
+                  brands.size === 0
+                    ? "All brands"
+                    : `${brands.size} brand${brands.size > 1 ? "s" : ""} selected`
+                }
+                wrapperClassName="w-full"
+                buttonClassName="w-full"
+                panelClassName="w-full left-0"
+              >
+                {() => (
+                  <div className="max-h-72 overflow-y-auto py-2">
+                    <BrandRow
+                      label="All brands"
+                      checked={brands.size === 0}
+                      onClick={() => setBrands(new Set())}
+                    />
+                    <div className="mx-4 my-1 border-t border-line" />
+                    {BRANDS.map((b) => (
+                      <BrandRow
+                        key={b}
+                        label={b}
+                        count={brandCounts[b] ?? 0}
+                        checked={brands.has(b)}
+                        onClick={() => toggleBrand(b)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Dropdown>
             </div>
           </aside>
 
           {/* Vehicle grid */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {results.map((v, i) => (
               <VehicleCard key={v.id} vehicle={v} index={i} />
             ))}
@@ -180,7 +244,7 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`flex shrink-0 snap-center items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm transition-colors ${
+      className={`flex shrink-0 items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm transition-colors ${
         active
           ? "border-accent bg-accent-soft text-accent"
           : "border-line text-muted hover:border-line-strong hover:text-text"
@@ -188,5 +252,123 @@ function FilterPill({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Small animated trigger + panel dropdown. The panel is always mounted
+ * (opacity/scale/pointer-events toggle) so the open/close transition can
+ * animate instead of popping in and out of the DOM.
+ */
+function Dropdown({
+  label,
+  wrapperClassName = "w-fit",
+  buttonClassName = "w-fit",
+  panelClassName = "left-0",
+  children,
+}: {
+  label: React.ReactNode;
+  wrapperClassName?: string;
+  buttonClassName?: string;
+  panelClassName?: string;
+  children: (close: () => void) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className={`relative ${wrapperClassName}`}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center justify-between gap-2 rounded-full border bg-surface px-4 py-2.5 text-left text-sm text-text transition-colors ${
+          open ? "border-accent" : "border-line hover:border-line-strong"
+        } ${buttonClassName}`}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          size={15}
+          className="shrink-0 text-muted transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+      <div
+        role="listbox"
+        aria-hidden={!open}
+        className={`absolute z-20 mt-2 origin-top rounded-2xl border border-line bg-surface shadow-xl transition-all duration-150 ease-out ${panelClassName}`}
+        style={{
+          opacity: open ? 1 : 0,
+          transform: open ? "scale(1) translateY(0)" : "scale(0.97) translateY(-6px)",
+          pointerEvents: open ? "auto" : "none",
+        }}
+      >
+        {children(() => setOpen(false))}
+      </div>
+    </div>
+  );
+}
+
+function BrandRow({
+  label,
+  count,
+  checked,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  checked: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+        checked ? "text-text" : "text-muted hover:bg-bg hover:text-text"
+      }`}
+    >
+      <span className="flex items-center gap-3">
+        <Checkbox checked={checked} />
+        {label}
+      </span>
+      {count !== undefined && <span className="text-xs text-muted">{count}</span>}
+    </button>
+  );
+}
+
+function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors duration-150 ${
+        checked ? "border-accent bg-accent" : "border-line-strong"
+      }`}
+    >
+      <Check
+        size={11}
+        strokeWidth={3}
+        className="text-bg transition-all duration-150"
+        style={{
+          opacity: checked ? 1 : 0,
+          transform: checked ? "scale(1)" : "scale(0.5)",
+        }}
+      />
+    </span>
   );
 }
