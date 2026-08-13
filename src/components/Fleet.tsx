@@ -193,42 +193,8 @@ export default function Fleet() {
             )}
           </div>
         </div>
-
-        {/* Stats row */}
-        <StatsRow />
       </div>
     </section>
-  );
-}
-
-/** Individual stat with fade-up on scroll */
-function StatsRow() {
-  const { ref, inView } = useInView({ threshold: 0.3 });
-  return (
-    <div
-      ref={ref}
-      className="mt-16 grid grid-cols-2 gap-6 border-t border-line pt-10 sm:grid-cols-4"
-    >
-      {[
-        { value: `${fleet.length}`, label: "Vehicles in the fleet" },
-        { value: "24/7", label: "Support" },
-        { value: "4.9★", label: "Customer rating" },
-        { value: "Included", label: "Delivery" },
-      ].map((s, i) => (
-        <div
-          key={s.label}
-          className="transition-all duration-600 ease-out"
-          style={{
-            opacity: inView ? 1 : 0,
-            transform: inView ? "translateY(0)" : "translateY(16px)",
-            transitionDelay: `${i * 80}ms`,
-          }}
-        >
-          <p className="font-display text-2xl text-text">{s.value}</p>
-          <p className="mt-1 text-xs text-muted">{s.label}</p>
-        </div>
-      ))}
-    </div>
   );
 }
 

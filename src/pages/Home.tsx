@@ -1,5 +1,6 @@
 import Hero from "../components/Hero";
 import BrandTicker from "../components/BrandTicker";
+import Stats from "../components/Stats";
 import Fleet from "../components/Fleet";
 import Pricing from "../components/Pricing";
 import Journey from "../components/Journey";
@@ -11,6 +12,7 @@ export default function Home() {
     <>
       <Hero />
       <BrandTicker />
+      <Stats />
       <Fleet />
       <Pricing />
       <Journey />
