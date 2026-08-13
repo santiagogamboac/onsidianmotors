@@ -1,770 +1,181 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useInView } from "../hooks/useInView";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, CalendarClock, Check, Gauge, MapPin, ShieldCheck } from "lucide-react";
+import { fleet } from "../data/fleet";
 
-// Pexels CDN — verified reachable
-const px = (id: number) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop`;
+const FEATURED_IDS = ["bmw-7er", "porsche-cayenne", "mercedes-s-klasse", "audi-q8"];
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   One section, two chapters.
-
-   Chapter 1 is a sequence: four ordered steps, each carrying its numeral.
-   Chapter 2 is a set: four services with no order between them. They share one
-   visual language but stay legibly different, so merging the two sections
-   doesn't quietly turn a process into a list.
-─────────────────────────────────────────────────────────────────────────────── */
-
-type Card =
-  | { kind: "step"; n: string; title: string; copy: string; image: string }
-  | { kind: "feature"; title: string; copy: string; image: string }
-  | { kind: "chapter"; eyebrow: string; title: string };
-
-type StepCard = Extract<Card, { kind: "step" }>;
-type FeatureCard = Extract<Card, { kind: "feature" }>;
-type ContentCardData = StepCard | FeatureCard;
-
-const STEPS: StepCard[] = [
-  {
-    kind: "step",
-    n: "01",
-    title: "Choose",
-    copy: "Browse our fleet and choose your vehicle — from the executive sedan to the performance-driven SUV.",
-    image: px(3764958),
-  },
-  {
-    kind: "step",
-    n: "02",
-    title: "Request",
-    copy: "Send your request via form or WhatsApp — we'll get back to you with availability and pricing shortly.",
-    image: px(5082579),
-  },
-  {
-    kind: "step",
-    n: "03",
-    title: "Confirm & Pay",
-    copy: "Confirm your dates and secure your booking with a fully refundable deposit. Quick, safe, and done in minutes.",
-    image: px(6801648),
-  },
-  {
-    kind: "step",
-    n: "04",
-    title: "Drive Off",
-    copy: "Pick up at our showroom or have it delivered to you — keys in hand, no waiting, no more paperwork.",
-    image: px(1592384),
-  },
-];
-
-const FEATURES: FeatureCard[] = [
-  {
-    kind: "feature",
-    title: "Personal Handover",
-    copy: "Your vehicle is ready and waiting at our showroom. Keys, registration, a quick walkthrough — you're behind the wheel in minutes.",
-    image: px(3807517),
-  },
-  {
-    kind: "feature",
-    title: "Delivery on Request",
-    copy: "No showroom visit needed: we bring the vehicle straight to you — home, office, or the airport.",
-    image: px(1181772),
-  },
-  {
-    kind: "feature",
-    title: "Checked Before Every Drive",
-    copy: "Every vehicle is hand-polished and technically inspected before handover. No compromise on cleanliness or condition.",
-    image: px(3807386),
-  },
-  {
-    kind: "feature",
-    title: "Available 24/7",
-    copy: "Questions on the road? Our team is here for you around the clock — by phone or WhatsApp.",
-    image: px(6894528),
-  },
-];
-
-// Deliberately does not repeat the chapter heading: by the time this panel is
-// on screen the sticky heading above has already swapped to it, and printing
-// the same words twice reads as a bug.
-const CHAPTER_BREAK: Card = {
-  kind: "chapter",
-  eyebrow: "Next",
-  title: "That's the process.",
+const FEATURED_IMAGES: Record<string, string> = {
+  "bmw-7er": "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1800&q=88",
+  "porsche-cayenne": "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1800&q=88",
+  "mercedes-s-klasse": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1800&q=88",
+  "audi-q8": "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1800&q=88",
 };
 
-const CARDS: Card[] = [...STEPS, CHAPTER_BREAK, ...FEATURES];
-
-// Where chapter two begins: drives the heading swap and the #experience anchor.
-const BREAK_INDEX = STEPS.length;
-
-const CHAPTERS = [
-  { eyebrow: "How it works", title: "Four steps to your car." },
-  { eyebrow: "The Experience", title: "More than just a key." },
+const HIGHLIGHTS = [
+  { icon: ShieldCheck, label: "Inspected & detailed" },
+  { icon: MapPin, label: "Delivery available" },
+  { icon: CalendarClock, label: "Flexible booking" },
 ];
 
 export default function Journey() {
-  const reduced = useReducedMotion();
-  // 768px: el carrusel entra ya en tablet. Por debajo, el scroll horizontal
-  // secuestrado y la perspectiva 3D se sienten mal y castigan la GPU, así que
-  // se sirve la pila vertical.
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-
-  // Only one layout is mounted, rather than rendering both and hiding one with
-  // CSS: the desktop and mobile versions each carry the #how and #experience
-  // anchors, so keeping both in the DOM duplicated those ids. On a phone the
-  // browser resolved #how to the CSS-hidden desktop copy, which has no box, and
-  // the nav link jumped to the top of the page instead of to the section.
-  return (
-    <section className="bg-bg">
-      {isDesktop ? (
-        reduced ? (
-          <SnapTrack />
-        ) : (
-          <PinnedJourney />
-        )
-      ) : (
-        <MobileLayout />
-      )}
-    </section>
-  );
-}
-
-/** Live-follows a media query. Safe to read on first render: this is a
- *  client-rendered app, so there is no server pass to mismatch. */
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(
-    () => typeof window !== "undefined" && window.matchMedia(query).matches
-  );
-
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    const onChange = (e: MediaQueryListEvent) => setMatches(e.matches);
-    setMatches(media.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, [query]);
-
-  return matches;
-}
-
-/** Live-follows the OS reduced-motion preference. */
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   PINNED JOURNEY — desktop
-
-   The outer wrapper is 100vh + scrollDistance tall so the inner panel stays
-   pinned while vertical scroll drives horizontal travel.
-
-   No scroll listener: a rAF loop reads getBoundingClientRect and is gated by an
-   IntersectionObserver, so nothing runs offscreen. Per-frame transforms are
-   written straight to the DOM through refs, so the tree never re-renders from
-   the animation. Only the discrete chapter and active index touch state.
-
-   The 3D is real browser perspective, not a library: each card rotates on Y and
-   recedes on Z in proportion to its distance from the viewport centre, giving a
-   cylinder that turns as you scroll.
-─────────────────────────────────────────────────────────────────────────────── */
-
-const CONTENT_MAX = 1280; // max-w-7xl
-const EDGE_PAD = 40; // px-10
-const TRAIL_PAD = 64;
-const LERP = 0.11;
-
-// 3D tuning. Kept modest on purpose: this is a luxury brand, not a carousel demo.
-const MAX_ROTATE = 26; // deg at the edge of the viewport
-const MAX_DEPTH = 220; // px pushed away from the viewer
-const MIN_OPACITY = 0.35;
-
-// Espacio vertical del panel fijo que no ocupa la pista: los márgenes entre
-// bloques más el padding propio del panel. El padding superior es mayor que el
-// inferior para dejar libre la barra de navegación fija, que si no se solapa
-// sobre el encabezado y se come el eyebrow.
-const TRACK_GAP_Y = 48 + 40 + (96 + 40);
-const MIN_CARD_H = 240;
-const MAX_CARD_H = 620;
-
-const contentLeftInset = () =>
-  Math.max(EDGE_PAD, (window.innerWidth - CONTENT_MAX) / 2 + EDGE_PAD);
-
-function PinnedJourney() {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const rafRef = useRef<number | null>(null);
-  const currentX = useRef(0);
-  const scrollDistRef = useRef(0);
-
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const headRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLDivElement>(null);
-
-  const [scrollDist, setScrollDist] = useState(0);
-  const [cardHeight, setCardHeight] = useState(560);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [chapter, setChapter] = useState(0);
-  const [headingVisible, setHeadingVisible] = useState(false);
-
-  const measure = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return 0;
-    return Math.max(
-      0,
-      contentLeftInset() + track.scrollWidth - window.innerWidth + TRAIL_PAD
-    );
-  }, []);
-
-  useEffect(() => {
-    const update = () => {
-      const d = measure();
-      scrollDistRef.current = d;
-      setScrollDist(d);
-
-      // La tarjeta se ata a la altura realmente disponible en el panel fijo.
-      // Antes tenía altura propia (imagen con proporción fija más el texto), y
-      // en una ventana baja, que es lo normal en un portátil, el contenido
-      // superaba el alto de la pantalla y overflow-hidden lo recortaba.
-      const sticky = stickyRef.current;
-      if (sticky) {
-        const used =
-          (headRef.current?.offsetHeight ?? 0) +
-          (controlsRef.current?.offsetHeight ?? 0) +
-          TRACK_GAP_Y;
-        setCardHeight(
-          Math.max(MIN_CARD_H, Math.min(sticky.clientHeight - used, MAX_CARD_H))
-        );
-      }
-    };
-
-    update();
-
-    const ro = new ResizeObserver(update);
-    if (trackRef.current) ro.observe(trackRef.current);
-    window.addEventListener("resize", update);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, [measure]);
-
-  useEffect(() => {
-    const outer = outerRef.current;
-    if (!outer) return;
-
-    const frame = () => {
-      const dist = scrollDistRef.current;
-      const rect = outer.getBoundingClientRect();
-
-      if (rect.top < window.innerHeight * 0.8) setHeadingVisible(true);
-
-      if (dist > 0) {
-        const progress = Math.min(Math.max(-rect.top, 0) / dist, 1);
-        const target = progress * dist;
-
-        currentX.current += (target - currentX.current) * LERP;
-        if (Math.abs(target - currentX.current) < 0.1) currentX.current = target;
-
-        const track = trackRef.current;
-        if (track) {
-          track.style.transform = `translate3d(${-currentX.current}px,0,0)`;
-        }
-        if (barRef.current) {
-          barRef.current.style.transform = `scaleX(${currentX.current / dist})`;
-        }
-
-        if (track) {
-          // Card positions come from layout (offsetLeft / offsetWidth), never
-          // from getBoundingClientRect: the rect already includes the rotateY
-          // and translateZ written below, so measuring it would feed the
-          // transform back into its own input and oscillate.
-          const trackLeft = track.getBoundingClientRect().left + currentX.current;
-          const centre = window.innerWidth / 2;
-
-          cardRefs.current.forEach((card) => {
-            if (!card) return;
-            const cardCentre =
-              trackLeft + card.offsetLeft + card.offsetWidth / 2;
-            // Signed, so cards left of centre turn the opposite way to those
-            // on the right and the whole track reads as one cylinder.
-            const raw = (cardCentre - centre) / window.innerWidth;
-            // Clamped on both signs: without this, a card several viewports
-            // away keeps rotating past 60deg and shows up as an edge-on sliver
-            // at the track edge, while depth and opacity have already topped out.
-            const offset = Math.max(-1, Math.min(1, raw));
-            const abs = Math.abs(offset);
-
-            const rotate = -offset * MAX_ROTATE;
-            const depth = -abs * MAX_DEPTH;
-            card.style.transform = `rotateY(${rotate.toFixed(2)}deg) translateZ(${depth.toFixed(1)}px)`;
-            card.style.opacity = (1 - abs * (1 - MIN_OPACITY)).toFixed(3);
-          });
-        }
-
-        // Active index and chapter come from scroll progress, not from whichever
-        // card is nearest the centre: the track's left inset and trailing pad
-        // keep the last card off centre, so a nearest-card index could never
-        // select the final item.
-        const idx = Math.round(progress * (CARDS.length - 1));
-        setActiveIndex((prev) => (prev === idx ? prev : idx));
-        setChapter((prev) => {
-          const next = idx >= BREAK_INDEX ? 1 : 0;
-          return prev === next ? prev : next;
-        });
-      }
-
-      rafRef.current = requestAnimationFrame(frame);
-    };
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && rafRef.current === null) {
-          rafRef.current = requestAnimationFrame(frame);
-        } else if (!entry.isIntersecting && rafRef.current !== null) {
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
-      },
-      { rootMargin: "100px" }
-    );
-    io.observe(outer);
-
-    return () => {
-      io.disconnect();
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
-  }, []);
-
-  const goTo = useCallback((index: number) => {
-    const outer = outerRef.current;
-    const dist = scrollDistRef.current;
-    if (!outer || dist <= 0) return;
-
-    const clamped = Math.min(Math.max(index, 0), CARDS.length - 1);
-    const ratio = clamped / (CARDS.length - 1);
-    const top = window.scrollY + outer.getBoundingClientRect().top + ratio * dist;
-    window.scrollTo({ top, behavior: "smooth" });
-  }, []);
-
-  return (
-    <div
-      id="how"
-      ref={outerRef}
-      className="relative scroll-mt-24"
-      style={{ height: scrollDist > 0 ? `calc(100vh + ${scrollDist}px)` : "100vh" }}
-    >
-      {/* Keeps the Experience nav link real: an anchor parked at the scroll
-          offset where chapter two begins, so jumping to it lands with the track
-          already panned to the services. */}
-      <div
-        id="experience"
-        className="pointer-events-none absolute left-0 w-px scroll-mt-24"
-        style={{
-          top: scrollDist > 0 ? (BREAK_INDEX / (CARDS.length - 1)) * scrollDist : 0,
-          height: 1,
-        }}
-        aria-hidden="true"
-      />
-
-      <div
-        ref={stickyRef}
-        className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center pt-24 pb-10"
-      >
-        <div ref={headRef} className="max-w-7xl mx-auto w-full px-10 shrink-0">
-          <div
-            className="flex items-end justify-between gap-8 transition-all duration-700 ease-out"
-            style={{
-              opacity: headingVisible ? 1 : 0,
-              transform: headingVisible ? "translateY(0)" : "translateY(20px)",
-            }}
-          >
-            {/* The section retitles itself on crossing into chapter two. Both
-                headings share one grid cell so the swap can't shift the layout
-                under the cards. */}
-            <div className="grid">
-              {CHAPTERS.map((c, i) => (
-                <div
-                  key={c.title}
-                  className={`col-start-1 row-start-1 transition-all duration-500 ease-out ${
-                    chapter === i
-                      ? "translate-y-0 opacity-100"
-                      : i === 0
-                        ? "-translate-y-3 opacity-0"
-                        : "translate-y-3 opacity-0"
-                  }`}
-                  aria-hidden={chapter !== i}
-                >
-                  <p className="eyebrow mb-3">{c.eyebrow}</p>
-                  <h2 className="font-display max-w-lg text-3xl font-medium sm:text-4xl">
-                    {c.title}
-                  </h2>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex shrink-0 gap-2">
-              <NavButton
-                label="Previous"
-                disabled={activeIndex === 0}
-                onClick={() => goTo(activeIndex - 1)}
-              >
-                <ArrowLeft size={16} strokeWidth={1.75} />
-              </NavButton>
-              <NavButton
-                label="Next"
-                disabled={activeIndex === CARDS.length - 1}
-                onClick={() => goTo(activeIndex + 1)}
-              >
-                <ArrowRight size={16} strokeWidth={1.75} />
-              </NavButton>
-            </div>
-          </div>
-        </div>
-
-        {/* perspective lives on the wrapper and preserve-3d on the track, so all
-            cards share one vanishing point instead of each getting its own. */}
-        <div
-          className="mt-12 max-w-7xl mx-auto w-full shrink-0"
-          style={{ perspective: "1600px" }}
-        >
-          <div
-            ref={trackRef}
-            className="flex items-stretch gap-10 pl-10 will-change-transform"
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            {CARDS.map((card, i) => (
-              <div
-                key={card.kind === "chapter" ? "break" : card.title}
-                ref={(el) => {
-                  cardRefs.current[i] = el;
-                }}
-                className="shrink-0 will-change-transform"
-                style={{ height: cardHeight }}
-              >
-                <JourneyCard card={card} />
-              </div>
-            ))}
-            <div className="shrink-0 w-16" aria-hidden="true" />
-          </div>
-        </div>
-
-        <div ref={controlsRef} className="mt-10 max-w-7xl mx-auto w-full px-10 shrink-0">
-          <div className="flex items-center gap-6">
-            <div className="h-px flex-1 bg-line-strong/40">
-              <div
-                ref={barRef}
-                className="h-px origin-left bg-accent will-change-transform"
-                style={{ transform: "scaleX(0)" }}
-                aria-hidden="true"
-              />
-            </div>
-
-            {/* Steps read as a numbered sequence, services as a set. The
-                indicators mirror that difference. */}
-            <div className="flex shrink-0 items-center gap-2">
-              {CARDS.map((card, i) => {
-                if (card.kind === "chapter") {
-                  return (
-                    <span
-                      key="sep"
-                      className="mx-1 h-3 w-px bg-line-strong"
-                      aria-hidden="true"
-                    />
-                  );
-                }
-                const isStep = card.kind === "step";
-                const on = i === activeIndex;
-                return (
-                  <button
-                    key={card.title}
-                    type="button"
-                    onClick={() => goTo(i)}
-                    aria-label={`Go to ${card.title}`}
-                    aria-current={on}
-                    className="group py-2"
-                  >
-                    <span
-                      className="block h-1.5 rounded-full transition-all duration-300 group-hover:bg-accent"
-                      style={{
-                        width: isStep ? (on ? 28 : 8) : 6,
-                        background: on
-                          ? "var(--color-accent)"
-                          : "var(--color-line-strong)",
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  const [paused, setPaused] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const featured = useMemo(
+    () => FEATURED_IDS.map((id) => fleet.find((vehicle) => vehicle.id === id)).filter(Boolean),
+    []
   );
-}
+  const active = featured[activeIndex] ?? featured[0];
 
-function NavButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-all duration-300 hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-30"
-    >
-      {children}
-    </button>
-  );
-}
-
-/* ── Cards ─────────────────────────────────────────────────────────────── */
-
-function JourneyCard({ card }: { card: Card }) {
-  if (card.kind === "chapter") return <ChapterPanel card={card} />;
-  return <ContentCard card={card} />;
-}
-
-/** The beat between the two chapters. Type only, no photo, so the eye reads it
- *  as a divider rather than as one more item in the set. */
-function ChapterPanel({ card }: { card: Extract<Card, { kind: "chapter" }> }) {
-  return (
-    <div className="flex h-full w-64 flex-col justify-center border-l border-line pl-8 lg:w-80 lg:pl-10">
-      <p className="eyebrow mb-3">{card.eyebrow}</p>
-      <h3 className="font-display text-3xl leading-tight">{card.title}</h3>
-      <p className="mt-4 text-sm leading-relaxed text-muted">
-        Now here is what surrounds it, from handover to the road.
-      </p>
-    </div>
-  );
-}
-
-function ContentCard({ card }: { card: ContentCardData }) {
-  const [loaded, setLoaded] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // The spotlight is two CSS custom properties written straight to the node.
-  // No state, no library: pointer tracking costs zero re-renders, and the fade
-  // in and out is a plain CSS group-hover transition.
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "mouse") return;
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
-    el.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
+  const goTo = (index: number) => {
+    setActiveIndex((index + featured.length) % featured.length);
   };
 
-  const isStep = card.kind === "step";
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % featured.length);
+    }, 5600);
+    return () => window.clearInterval(timer);
+  }, [paused, featured.length]);
+
+  useEffect(() => {
+    const node = trackRef.current;
+    if (!node) return;
+    const selected = node.querySelector<HTMLElement>(`[data-slide="${activeIndex}"]`);
+    selected?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeIndex]);
+
+  if (!active) return null;
 
   return (
-    <div
-      ref={ref}
-      onPointerMove={onPointerMove}
-      // Más estrecha en tablet: a 480px sólo cabría una tarjeta y se perdería
-      // la sensación de pista. El cálculo del recorrido lee scrollWidth, así
-      // que se adapta solo al cambio de ancho.
-      className="group relative flex h-full w-88 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-500 ease-out hover:border-accent/50 hover:shadow-[0_8px_40px_rgba(198,161,91,0.10)] lg:w-120"
-    >
-      {/* Accent wash that follows the cursor. Above the surface, below the
-          content, and never eats pointer events. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background:
-            "radial-gradient(320px circle at var(--spot-x, 50%) var(--spot-y, 50%), var(--color-accent-soft), transparent 70%)",
-        }}
-      />
-
-      {/* La imagen absorbe el espacio que sobra en lugar de fijar su propia
-          proporción, para que la tarjeta quepa en la altura disponible. */}
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-2">
-        {!loaded && (
-          <div className="absolute inset-0 skeleton-shimmer" aria-hidden="true" />
-        )}
-        <img
-          src={card.image}
-          alt={card.title}
-          loading="lazy"
-          decoding="async"
-          width={800}
-          height={600}
-          onLoad={() => setLoaded(true)}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-          className={`h-full w-full object-cover transition-[opacity,scale] duration-700 group-hover:scale-105 ${
-            loaded ? "opacity-100" : "opacity-0"
-          }`}
-        />
-      </div>
-
-      <div className="shrink-0 p-6 lg:p-8">
-        {isStep ? (
-          <p className="spec text-sm text-accent">{card.n}</p>
-        ) : (
-          <span className="block h-px w-8 bg-accent" aria-hidden="true" />
-        )}
-        <h3 className={`font-display text-xl lg:text-2xl ${isStep ? "mt-2" : "mt-4"}`}>
-          {card.title}
-        </h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted lg:text-base">
-          {card.copy}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ── Reduced-motion desktop fallback: a native scroll-snap track, no 3D ── */
-function SnapTrack() {
-  return (
-    <div id="how" className="scroll-mt-24 py-24">
-      <div className="max-w-7xl mx-auto w-full px-10">
-        <p className="eyebrow mb-3">{CHAPTERS[0].eyebrow}</p>
-        <h2 className="font-display max-w-lg text-3xl font-medium sm:text-4xl">
-          {CHAPTERS[0].title}
-        </h2>
-      </div>
-
-      <div className="no-scrollbar mt-12 flex snap-x snap-mandatory items-stretch gap-10 overflow-x-auto px-10 pb-4">
-        {CARDS.map((card) => (
-          <div
-            key={card.kind === "chapter" ? "break" : card.title}
-            id={card.kind === "chapter" ? "experience" : undefined}
-            className="shrink-0 snap-start"
-          >
-            <JourneyCard card={card} />
+    <section id="experience" className="relative overflow-hidden bg-surface py-20 sm:py-24 lg:py-28">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 2xl:px-16">
+        <div className="mb-10 flex flex-col gap-8 lg:mb-12 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="eyebrow mb-4">The Obsidian edit</p>
+            <h2 className="font-display text-4xl font-medium leading-[1.05] tracking-tight text-text sm:text-5xl lg:text-6xl">
+              A better way to arrive.
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted sm:text-lg">
+              Explore a considered selection of vehicles, prepared for the moments that matter.
+              Every detail is there to make choosing feel as good as driving.
+            </p>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-/* ── Mobile: a plain vertical stack, both chapters, no hijack ── */
-function MobileLayout() {
-  return (
-    <div className="px-6 py-24">
-      <ChapterHeading
-        eyebrow={CHAPTERS[0].eyebrow}
-        title={CHAPTERS[0].title}
-        id="how"
-      />
-      <div className="mt-12 flex flex-col gap-10">
-        {STEPS.map((c, i) => (
-          <MobileCard key={c.title} card={c} index={i} />
-        ))}
-      </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="mr-2 font-display text-sm tabular-nums text-muted">
+              <strong className="text-text">{String(activeIndex + 1).padStart(2, "0")}</strong>
+              <span className="mx-2 text-line-strong">/</span>
+              {String(featured.length).padStart(2, "0")}
+            </span>
+            <button
+              type="button"
+              aria-label="Previous vehicle"
+              onClick={() => goTo(activeIndex - 1)}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-line-strong text-muted transition hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              <ArrowLeft size={17} />
+            </button>
+            <button
+              type="button"
+              aria-label="Next vehicle"
+              onClick={() => goTo(activeIndex + 1)}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-line-strong text-muted transition hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              <ArrowRight size={17} />
+            </button>
+          </div>
+        </div>
 
-      <ChapterHeading
-        eyebrow={CHAPTERS[1].eyebrow}
-        title={CHAPTERS[1].title}
-        id="experience"
-        className="mt-24"
-      />
-      <div className="mt-12 flex flex-col gap-10">
-        {FEATURES.map((c, i) => (
-          <MobileCard key={c.title} card={c} index={i} />
-        ))}
-      </div>
-    </div>
-  );
-}
+        <div
+          className="relative"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+        >
+          <div ref={trackRef} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 lg:gap-6">
+            {featured.map((vehicle, index) => {
+              if (!vehicle) return null;
+              const isActive = index === activeIndex;
+              return (
+                <article
+                  key={vehicle.id}
+                  data-slide={index}
+                  className={`group relative flex min-w-[86vw] snap-center flex-col overflow-hidden rounded-[1.75rem] border bg-bg transition duration-500 sm:min-w-[72vw] md:min-w-[58vw] lg:min-w-[calc(68%-12px)] xl:min-w-[calc(58%-12px)] ${isActive ? "border-accent/50 shadow-2xl shadow-black/20" : "border-line opacity-70"}`}
+                >
+                  <div className="relative aspect-[16/9] overflow-hidden bg-surface-2 sm:aspect-[1.9/1]">
+                    <img
+                      src={FEATURED_IMAGES[vehicle.id] ?? vehicle.images[0]}
+                      alt={`${vehicle.name} exterior`}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent opacity-80" />
+                    <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                      {vehicle.brand} <span className="text-accent">/</span> {vehicle.type}
+                    </div>
+                    <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 text-white sm:bottom-6 sm:left-7 sm:right-7">
+                      <div>
+                        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-white/60">Featured vehicle</p>
+                        <h3 className="font-display text-2xl font-medium sm:text-3xl">{vehicle.name}</h3>
+                      </div>
+                      <p className="font-display text-xl text-accent sm:text-2xl">
+                        ${vehicle.pricePerDay}<span className="ml-1 text-xs text-white/60">/ day</span>
+                      </p>
+                    </div>
+                  </div>
 
-function ChapterHeading({
-  eyebrow,
-  title,
-  id,
-  className = "",
-}: {
-  eyebrow: string;
-  title: string;
-  id: string;
-  className?: string;
-}) {
-  const { ref, inView } = useInView({ threshold: 0.3 });
-  return (
-    <div
-      id={id}
-      ref={ref}
-      className={`scroll-mt-24 transition-all duration-700 ease-out ${className} ${
-        inView ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
-      }`}
-    >
-      <p className="eyebrow mb-3">{eyebrow}</p>
-      <h2 className="font-display max-w-lg text-3xl font-medium">{title}</h2>
-    </div>
-  );
-}
+                  <div className="grid flex-1 gap-6 p-5 sm:grid-cols-[1fr_auto] sm:p-7">
+                    <div>
+                      <p className="max-w-2xl text-sm leading-6 text-muted sm:text-base">{vehicle.description}</p>
+                      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
+                        <span className="inline-flex items-center gap-1.5"><Gauge size={14} className="text-accent" /> {vehicle.engine}</span>
+                        <span>{vehicle.zeroToHundred} 0–100</span>
+                        <span>{vehicle.seats} seats</span>
+                      </div>
+                    </div>
+                    <a
+                      href={`/fleet/${vehicle.id}`}
+                      className="inline-flex h-fit items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-medium text-bg transition hover:scale-[1.02] active:scale-[0.98] sm:self-end"
+                    >
+                      Explore vehicle
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
 
-function MobileCard({ card, index }: { card: ContentCardData; index: number }) {
-  const { ref, inView } = useInView({ threshold: 0.2 });
-  const isStep = card.kind === "step";
+        <div className="mt-8 flex flex-col gap-6 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            {HIGHLIGHTS.map(({ icon: Icon, label }) => (
+              <span key={label} className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.13em] text-muted">
+                <Icon size={15} className="text-accent" /> {label}
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-2" aria-label="Carousel slides">
+            {featured.map((vehicle, index) => (
+              <button
+                key={vehicle?.id ?? index}
+                type="button"
+                aria-label={`Go to slide ${index + 1}`}
+                aria-current={index === activeIndex}
+                onClick={() => goTo(index)}
+                className={`h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent ${index === activeIndex ? "w-10 bg-accent" : "w-5 bg-line-strong hover:bg-muted"}`}
+              />
+            ))}
+          </div>
+        </div>
 
-  return (
-    <div
-      ref={ref}
-      // The reveal transform lives in the className rather than an inline style:
-      // an inline style.transform always beats the hover translate utility for
-      // the same property, which would kill the lift.
-      className={`group overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-700 ease-out hover:-translate-y-1 hover:border-accent/50 ${
-        inView ? "translate-y-0 opacity-100" : "translate-y-7 opacity-0"
-      }`}
-      style={{ transitionDelay: `${index * 100}ms` }}
-    >
-      <div className="aspect-4/3 overflow-hidden bg-surface-2">
-        <img
-          src={card.image}
-          alt={card.title}
-          loading="lazy"
-          decoding="async"
-          width={800}
-          height={600}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
+        <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-accent/20 bg-accent-soft/30 px-5 py-4 text-sm text-muted sm:px-6">
+          <p><Check size={16} className="mr-2 inline text-accent" />Every vehicle is prepared, inspected and ready for its next story.</p>
+          <a href="#contact" className="hidden shrink-0 font-medium text-accent underline-offset-4 hover:underline sm:inline">Talk to a specialist</a>
+        </div>
       </div>
-      <div className="p-6">
-        {isStep ? (
-          <p className="spec text-sm text-accent">{card.n}</p>
-        ) : (
-          <span className="block h-px w-8 bg-accent" aria-hidden="true" />
-        )}
-        <h3 className={`font-display text-xl ${isStep ? "mt-2" : "mt-4"}`}>
-          {card.title}
-        </h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{card.copy}</p>
-      </div>
-    </div>
+    </section>
   );
 }
