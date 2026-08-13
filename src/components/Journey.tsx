@@ -103,7 +103,10 @@ const CHAPTERS = [
 
 export default function Journey() {
   const reduced = useReducedMotion();
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  // 768px: el carrusel entra ya en tablet. Por debajo, el scroll horizontal
+  // secuestrado y la perspectiva 3D se sienten mal y castigan la GPU, así que
+  // se sirve la pila vertical.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // Only one layout is mounted, rather than rendering both and hiding one with
   // CSS: the desktop and mobile versions each carry the #how and #experience
@@ -187,6 +190,14 @@ const MAX_ROTATE = 26; // deg at the edge of the viewport
 const MAX_DEPTH = 220; // px pushed away from the viewer
 const MIN_OPACITY = 0.35;
 
+// Espacio vertical del panel fijo que no ocupa la pista: los márgenes entre
+// bloques más el padding propio del panel. El padding superior es mayor que el
+// inferior para dejar libre la barra de navegación fija, que si no se solapa
+// sobre el encabezado y se come el eyebrow.
+const TRACK_GAP_Y = 48 + 40 + (96 + 40);
+const MIN_CARD_H = 240;
+const MAX_CARD_H = 620;
+
 const contentLeftInset = () =>
   Math.max(EDGE_PAD, (window.innerWidth - CONTENT_MAX) / 2 + EDGE_PAD);
 
@@ -200,7 +211,12 @@ function PinnedJourney() {
   const currentX = useRef(0);
   const scrollDistRef = useRef(0);
 
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+
   const [scrollDist, setScrollDist] = useState(0);
+  const [cardHeight, setCardHeight] = useState(560);
   const [activeIndex, setActiveIndex] = useState(0);
   const [chapter, setChapter] = useState(0);
   const [headingVisible, setHeadingVisible] = useState(false);
@@ -219,6 +235,21 @@ function PinnedJourney() {
       const d = measure();
       scrollDistRef.current = d;
       setScrollDist(d);
+
+      // La tarjeta se ata a la altura realmente disponible en el panel fijo.
+      // Antes tenía altura propia (imagen con proporción fija más el texto), y
+      // en una ventana baja, que es lo normal en un portátil, el contenido
+      // superaba el alto de la pantalla y overflow-hidden lo recortaba.
+      const sticky = stickyRef.current;
+      if (sticky) {
+        const used =
+          (headRef.current?.offsetHeight ?? 0) +
+          (controlsRef.current?.offsetHeight ?? 0) +
+          TRACK_GAP_Y;
+        setCardHeight(
+          Math.max(MIN_CARD_H, Math.min(sticky.clientHeight - used, MAX_CARD_H))
+        );
+      }
     };
 
     update();
@@ -352,8 +383,11 @@ function PinnedJourney() {
         aria-hidden="true"
       />
 
-      <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center py-10">
-        <div className="max-w-7xl mx-auto w-full px-10 shrink-0">
+      <div
+        ref={stickyRef}
+        className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center pt-24 pb-10"
+      >
+        <div ref={headRef} className="max-w-7xl mx-auto w-full px-10 shrink-0">
           <div
             className="flex items-end justify-between gap-8 transition-all duration-700 ease-out"
             style={{
@@ -422,6 +456,7 @@ function PinnedJourney() {
                   cardRefs.current[i] = el;
                 }}
                 className="shrink-0 will-change-transform"
+                style={{ height: cardHeight }}
               >
                 <JourneyCard card={card} />
               </div>
@@ -430,7 +465,7 @@ function PinnedJourney() {
           </div>
         </div>
 
-        <div className="mt-10 max-w-7xl mx-auto w-full px-10 shrink-0">
+        <div ref={controlsRef} className="mt-10 max-w-7xl mx-auto w-full px-10 shrink-0">
           <div className="flex items-center gap-6">
             <div className="h-px flex-1 bg-line-strong/40">
               <div
@@ -520,7 +555,7 @@ function JourneyCard({ card }: { card: Card }) {
  *  as a divider rather than as one more item in the set. */
 function ChapterPanel({ card }: { card: Extract<Card, { kind: "chapter" }> }) {
   return (
-    <div className="flex h-full w-80 flex-col justify-center border-l border-line pl-10">
+    <div className="flex h-full w-64 flex-col justify-center border-l border-line pl-8 lg:w-80 lg:pl-10">
       <p className="eyebrow mb-3">{card.eyebrow}</p>
       <h3 className="font-display text-3xl leading-tight">{card.title}</h3>
       <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -552,7 +587,10 @@ function ContentCard({ card }: { card: ContentCardData }) {
     <div
       ref={ref}
       onPointerMove={onPointerMove}
-      className="group relative h-full w-120 overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-500 ease-out hover:border-accent/50 hover:shadow-[0_8px_40px_rgba(198,161,91,0.10)]"
+      // Más estrecha en tablet: a 480px sólo cabría una tarjeta y se perdería
+      // la sensación de pista. El cálculo del recorrido lee scrollWidth, así
+      // que se adapta solo al cambio de ancho.
+      className="group relative flex h-full w-88 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-500 ease-out hover:border-accent/50 hover:shadow-[0_8px_40px_rgba(198,161,91,0.10)] lg:w-120"
     >
       {/* Accent wash that follows the cursor. Above the surface, below the
           content, and never eats pointer events. */}
@@ -565,7 +603,9 @@ function ContentCard({ card }: { card: ContentCardData }) {
         }}
       />
 
-      <div className="relative aspect-4/3 overflow-hidden bg-surface-2">
+      {/* La imagen absorbe el espacio que sobra en lugar de fijar su propia
+          proporción, para que la tarjeta quepa en la altura disponible. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-2">
         {!loaded && (
           <div className="absolute inset-0 skeleton-shimmer" aria-hidden="true" />
         )}
@@ -586,16 +626,18 @@ function ContentCard({ card }: { card: ContentCardData }) {
         />
       </div>
 
-      <div className="p-8">
+      <div className="shrink-0 p-6 lg:p-8">
         {isStep ? (
           <p className="spec text-sm text-accent">{card.n}</p>
         ) : (
           <span className="block h-px w-8 bg-accent" aria-hidden="true" />
         )}
-        <h3 className={`font-display text-2xl ${isStep ? "mt-2" : "mt-4"}`}>
+        <h3 className={`font-display text-xl lg:text-2xl ${isStep ? "mt-2" : "mt-4"}`}>
           {card.title}
         </h3>
-        <p className="mt-2 text-base leading-relaxed text-muted">{card.copy}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted lg:text-base">
+          {card.copy}
+        </p>
       </div>
     </div>
   );
