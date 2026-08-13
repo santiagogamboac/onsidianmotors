@@ -65,9 +65,19 @@ export default function Journey() {
     return () => window.clearInterval(timer);
   }, [paused]);
 
+  // Centre the active slide by scrolling the track itself. scrollIntoView walks
+  // up every scrollable ancestor including the document, so while the autoplay
+  // timer ran it dragged the whole page down to this carousel — yanking the
+  // viewport away from whatever the user was actually doing (e.g. the fleet
+  // filters). Scrolling the container directly can never move the page.
   useEffect(() => {
-    const node = trackRef.current?.querySelector<HTMLElement>(`[data-slide="${activeIndex}"]`);
-    node?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    const track = trackRef.current;
+    const node = track?.querySelector<HTMLElement>(`[data-slide="${activeIndex}"]`);
+    if (!track || !node) return;
+    const trackBox = track.getBoundingClientRect();
+    const nodeBox = node.getBoundingClientRect();
+    const offset = nodeBox.left - trackBox.left - (trackBox.width - nodeBox.width) / 2;
+    track.scrollTo({ left: track.scrollLeft + offset, behavior: "smooth" });
   }, [activeIndex]);
 
   return (
