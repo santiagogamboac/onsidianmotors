@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"console.log\\(process.version\\)\")",
+      "Bash(node -e \"const {chromium}=require\\('playwright-core'\\); console.log\\('playwright-core ok'\\)\")",
+      "Bash(BASE=http://localhost:5175 node verify2.js)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "PowerShell(gh --version)",
+      "PowerShell(gh auth status)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git config *)",
+      "Bash(where git *)",
+      "Bash(git --version)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(echo \"LINT_EXIT:$?\")",
+      "Bash(pnpm --version)",
+      "Bash(git branch *)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\")",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId=23240\")",
+      "PowerShell(Stop-Process -Id 23240 -Force -Confirm:$false)",
+      "PowerShell(Get-Process -Id 23240 -ErrorAction SilentlyContinue)",
+      "Bash(curl -sf http://localhost:5173)",
+      "Bash(break)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright-core'\\)\\)\")",
+      "Bash(node shot.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://images.pexels.com/photos/6693661/pexels-photo-6693661.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop\")",
+      "Read(//c//**)",
+      "Bash(npm ls *)",
+      "Bash(powershell -Command \"Test-Path 'C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'\")",
+      "Bash(npm view *)"
+    ]
+  }
+}
