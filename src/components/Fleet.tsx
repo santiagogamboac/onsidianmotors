@@ -46,10 +46,18 @@ export default function Fleet() {
   return (
     <section id="fleet" className="bg-bg py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:max-w-none lg:px-10 2xl:px-16">
-        {/* Header */}
+        {/*
+          Header. The reveal animation leaves a permanent transform on this
+          element, which makes it its own stacking context — so the sort
+          panel's z-20 never competes with the vehicle grid, only with the
+          header's own children. Each card carries a transform too (another
+          context at level 0) and comes later in the DOM, so the cards painted
+          over the open panel. The z-index belongs here, on the stacking
+          context itself; z-30 keeps it above the grid and below the nav (z-50).
+        */}
         <div
           ref={headingRef}
-          className="flex flex-col justify-between gap-6 border-b border-line pb-8 sm:flex-row sm:items-end transition-all duration-700 ease-out"
+          className="relative z-30 flex flex-col justify-between gap-6 border-b border-line pb-8 sm:flex-row sm:items-end transition-all duration-700 ease-out"
           style={{
             opacity: headingVisible ? 1 : 0,
             transform: headingVisible ? "translateY(0)" : "translateY(20px)",
@@ -99,8 +107,19 @@ export default function Fleet() {
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[260px_1fr]">
-          {/* Sidebar filters */}
-          <aside className="lg:sticky lg:top-28 lg:self-start">
+          {/*
+            Sidebar filters. From lg up this aside is sticky, which makes it its
+            own stacking context — so the brand panel's z-20 only competes with
+            its siblings inside the aside, while every vehicle card carries a
+            transform (its own stacking context at level 0) and the grid comes
+            later in the DOM. That let the cards paint over the open panel, so
+            the z-index belongs here, on the stacking context itself.
+
+            It is scoped to lg on purpose: below lg the aside is static and
+            raising it would put it above the sort dropdown, whose panel opens
+            downward over these filters when the header stacks vertically.
+          */}
+          <aside className="lg:sticky lg:top-28 lg:z-30 lg:self-start">
             <h3 className="font-display mb-4 text-sm tracking-[0.2em] text-muted">
               FILTER
             </h3>
