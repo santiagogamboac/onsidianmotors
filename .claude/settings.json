@@ -32,7 +32,20 @@
       "Read(//c//**)",
       "Bash(npm ls *)",
       "Bash(powershell -Command \"Test-Path 'C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'\")",
-      "Bash(npm view *)"
+      "Bash(npm view *)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId, CreationDate, @{n='Cmd';e={$_.CommandLine.Substring\\(0,[Math]::Min\\(140,$_.CommandLine.Length\\)\\)}})",
+      "PowerShell($f=\"dist\\\\assets\\\\index-C6yVE2NA.js\"; \\(Get-Item $f\\).Length; $c=Get-Content $f -Raw; foreach\\($p in @\\(\"Featured vehicle\",\"Prepared before handover\",\"better way to arrive\",\"How it works\",\"OBSIDIAN EDIT\",\"Explore vehicle\",\"Start with your needs\"\\)\\){ \"{0,-28} {1}\" -f $p, $c.Contains\\($p\\) })",
+      "PowerShell(pnpm run build 2>&1)",
+      "PowerShell(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 3000,4173,5173,5174,5175,5183,8080 } | Select-Object LocalPort, OwningProcess)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId=42236\")",
+      "Bash(npm ping *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\SANTIA~1.CEL\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-santiago-cely-source-repos-Proyectos-obsidian-motors-clone-obsidian-motors\\\\52b51cda-11c1-43c5-a432-ead080678fc6\\\\scratchpad\\\\pw-test\")",
+      "Bash(npm init *)",
+      "Bash(npx playwright *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(taskkill //PID 35628 //F)",
+      "Bash(git --no-pager log --oneline -1)",
+      "Bash(git --no-pager log --oneline -6)"
     ]
   }
 }
