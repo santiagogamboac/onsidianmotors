@@ -103,15 +103,44 @@ const CHAPTERS = [
 
 export default function Journey() {
   const reduced = useReducedMotion();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
+  // Only one layout is mounted, rather than rendering both and hiding one with
+  // CSS: the desktop and mobile versions each carry the #how and #experience
+  // anchors, so keeping both in the DOM duplicated those ids. On a phone the
+  // browser resolved #how to the CSS-hidden desktop copy, which has no box, and
+  // the nav link jumped to the top of the page instead of to the section.
   return (
     <section className="bg-bg">
-      <div className="hidden lg:block">
-        {reduced ? <SnapTrack /> : <PinnedJourney />}
-      </div>
-      <MobileLayout />
+      {isDesktop ? (
+        reduced ? (
+          <SnapTrack />
+        ) : (
+          <PinnedJourney />
+        )
+      ) : (
+        <MobileLayout />
+      )}
     </section>
   );
+}
+
+/** Live-follows a media query. Safe to read on first render: this is a
+ *  client-rendered app, so there is no server pass to mismatch. */
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const onChange = (e: MediaQueryListEvent) => setMatches(e.matches);
+    setMatches(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [query]);
+
+  return matches;
 }
 
 /** Live-follows the OS reduced-motion preference. */
@@ -601,7 +630,7 @@ function SnapTrack() {
 /* ── Mobile: a plain vertical stack, both chapters, no hijack ── */
 function MobileLayout() {
   return (
-    <div className="lg:hidden px-6 py-24">
+    <div className="px-6 py-24">
       <ChapterHeading
         eyebrow={CHAPTERS[0].eyebrow}
         title={CHAPTERS[0].title}
