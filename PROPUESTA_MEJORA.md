@@ -14,19 +14,19 @@ En el proyecto de Obsidian Motors, el carrusel anterior mezclaba un scroll verti
 
 ## 2. Mejora aplicada
 
-La sección `Journey` fue rediseñada como **The Obsidian edit / A better way to arrive**. Ahora muestra una tarjeta principal de vehículo con imagen dominante, marca, tipo, precio diario, descripción, especificaciones esenciales y CTA a detalle. Las tarjetas vecinas permanecen parcialmente visibles para comunicar continuidad y permitir descubrimiento.
+La sección `Journey` fue rediseñada como **How it works / Premium service, without the usual friction**. El marketplace ya se encarga de mostrar vehículos, por lo que este carrusel ahora explica la empresa y el servicio: entender la necesidad del cliente, ayudar a elegir, preparar cada entrega y mantener acompañamiento durante la experiencia. Las tarjetas vecinas permanecen parcialmente visibles para comunicar continuidad y permitir descubrimiento sin duplicar el inventario.
 
 | Área | Antes | Ahora |
 |---|---|---|
 | Interacción | Scroll vertical que controla un carrusel horizontal con 3D | Carrusel horizontal con snap, flechas, dots y autoplay pausible |
-| Contenido | Capítulos y tarjetas de proceso mezclados | Selección curada de cuatro vehículos con información accionable |
+| Contenido | Capítulos y tarjetas de proceso mezclados | Cuatro etapas editoriales sobre la experiencia de la empresa |
 | Desktop | Altura calculada y riesgo de recorte en ventanas bajas | Altura basada en proporción de imagen + contenido natural |
 | Tablet | Pista compleja difícil de controlar | Tarjetas de ancho intermedio con peek lateral y swipe |
 | Celular | Riesgo de scroll secuestrado | Una tarjeta por viewport, swipe nativo y controles accesibles |
-| Conversión | CTA diluido dentro del relato | `Explore vehicle` y `Talk to a specialist` claramente visibles |
+| Conversión | CTA diluido dentro del relato | La narrativa conduce a contacto y appointment sin competir con el marketplace |
 | Confianza | Beneficios dispersos | Rail compacto: inspección, delivery y reserva flexible |
 
-El nuevo carrusel también respeta `prefers-reduced-motion`, mantiene controles con foco visible y pausa el autoplay al entrar con mouse o teclado. Las imágenes se cargan con `eager` solo para la primera tarjeta y `lazy` para las demás.
+El nuevo carrusel institucional también respeta `prefers-reduced-motion`, mantiene controles con foco visible y pausa el autoplay al entrar con mouse o teclado. Las imágenes se cargan con `eager` solo para la primera tarjeta y `lazy` para las demás.
 
 ## 3. Reglas responsive y corrección de espacios
 
@@ -42,7 +42,7 @@ El formulario de contacto existente sigue el patrón correcto para esta fase: us
 
 ## 5. Backend propuesto para la siguiente fase
 
-La implementación productiva debe separar el contenido de marketing del inventario operativo. El frontend consumirá una API para obtener vehículos, disponibilidad, precios y leads; el carrusel podrá seguir usando una selección editorial administrable desde el backend.
+La implementación productiva debe separar el contenido de marketing del inventario operativo. El frontend consumirá una API para obtener vehículos, disponibilidad, precios y leads; el carrusel institucional podrá seguir usando una selección editorial administrable desde el backend, mientras el marketplace mantiene el inventario y los detalles de vehículos.
 
 | Módulo | Responsabilidad | Entidades principales |
 |---|---|---|
